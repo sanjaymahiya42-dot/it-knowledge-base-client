@@ -1,5 +1,10 @@
 const VITE_ENV = import.meta.env || {};
-const API_BASE = VITE_ENV.VITE_API_BASE_URL || window.VITE_API_BASE_URL || localStorage.getItem("apiBaseUrl") || "http://localhost:5000/api";
+
+const API_BASE =
+  VITE_ENV.VITE_API_BASE_URL ||
+  "https://it-knowledge-base-server.onrender.com/api";
+
+console.log("API_BASE =", API_BASE);
 const FALLBACK_CATEGORIES = [
   "Home", "Networking", "Windows", "Linux", "Cisco", "CCNA", "Firewall", "Switching", "Routing",
   "Cyber Security", "Cloud", "Virtualization", "Server", "VMware", "Azure", "AWS", "Microsoft 365",
@@ -323,6 +328,7 @@ async function saveSettings(event) {
   await api("/auth/profile", { method: "PUT", body: JSON.stringify(payload) });
   event.currentTarget.reset();
   toast("Profile updated.");
+console.log(payload);
 
 }
 
