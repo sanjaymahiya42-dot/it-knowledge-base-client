@@ -54,16 +54,41 @@ async function api(path, options = {}) {
 }
 
 async function bootstrapData() {
-  await Promise.allSettled([loadCategories(), loadArticles(), loadStats()]);
-  renderAll();
+  try {
+    await loadCategories();
+
+    await Promise.allSettled([
+      loadArticles(),
+      loadStats()
+    ]);
+
+    renderAll();
+
+  } catch (error) {
+    console.error("Bootstrap Error:", error);
+    renderAll();
+  }
 }
 
 async function loadCategories() {
   try {
-    const { categories } = await api("/categories");
-    state.categories = categories;
-  } catch {
-    state.categories = FALLBACK_CATEGORIES.map((name) => ({ _id: name, name, icon: iconFor(name) }));
+    const data = await api("/categories");
+
+    console.log("Categories API Response:", data);
+
+    state.categories = data.categories || [];
+
+    console.log("State Categories:", state.categories);
+
+  } catch (error) {
+
+    console.error("Category Load Error:", error);
+
+    state.categories = FALLBACK_CATEGORIES.map((name) => ({
+      _id: name,
+      name,
+      icon: iconFor(name)
+    }));
   }
 }
 
@@ -178,10 +203,28 @@ function articleCard(article) {
 }
 
 function renderCategorySelect() {
-  $("#categorySelect").innerHTML = `<option value="">Select category</option>` + state.categories
-    .filter((cat) => !["Home", "Favorites", "Settings", "Logout"].includes(cat.name))
-    .map((cat) => `<option value="${cat._id}">${escapeHtml(cat.name)}</option>`)
-    .join("");
+
+  const select = $("#categorySelect");
+
+  if (!select) {
+    console.log("categorySelect not found");
+    return;
+  }
+
+  console.log("Rendering Categories:", state.categories);
+
+  select.innerHTML =
+    `<option value="">Select category</option>` +
+    state.categories
+      .filter((cat) => 
+        !["Home", "Favorites", "Settings", "Logout"].includes(cat.name)
+      )
+      .map((cat) => 
+        `<option value="${cat._id}">
+          ${escapeHtml(cat.name)}
+        </option>`
+      )
+      .join("");
 }
 
 function renderAdmin() {
