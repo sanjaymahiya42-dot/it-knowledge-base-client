@@ -140,10 +140,28 @@ function renderAll() {
 }
 
 function renderCategories() {
-  const filter = $("#categorySearch").value?.toLowerCase() || "";
-  $("#categoryNav").innerHTML = state.categories
-    .filter((cat) => cat.name.toLowerCase().includes(filter))
-    .map((cat) => `<button class="nav-item ${state.selectedCategory === cat.name ? "active" : ""}" data-category="${escapeHtml(cat.name)}"><i class="fa-solid ${cat.icon || iconFor(cat.name)}"></i><span>${escapeHtml(cat.name)}</span></button>`)
+
+  const searchBox = $("#categorySearch");
+  const nav = $("#categoryNav");
+
+  if (!nav) return;
+
+  const filter = searchBox?.value?.toLowerCase() || "";
+
+  nav.innerHTML = state.categories
+    .filter(cat => 
+      cat.name && cat.name.toLowerCase().includes(filter)
+    )
+    .map(cat => 
+      `<button class="nav-item ${state.selectedCategory === cat.name ? "active" : ""}" 
+      data-category="${escapeHtml(cat.name)}">
+
+      <i class="fa-solid ${cat.icon || iconFor(cat.name)}"></i>
+
+      <span>${escapeHtml(cat.name)}</span>
+
+      </button>`
+    )
     .join("");
 }
 
@@ -292,8 +310,24 @@ async function handleClick(event) {
 
 function showView(name) {
   $$(".view").forEach((view) => view.classList.remove("active"));
-  $(`#${name}View`).classList.add("active");
-  scrollTo({ top: 0, behavior: "smooth" });
+
+  const view = document.getElementById(`${name}View`);
+  if (!view) return;
+
+  view.classList.add("active");
+
+  scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+  if (name === "editor") {
+    setTimeout(() => {
+      if (!tinymce.get("richEditor")) {
+        initTinyMce();
+      }
+    }, 100);
+  }
 }
 
 async function refreshFromFilters() {
@@ -560,13 +594,35 @@ async function backupDatabase() {
 
 function initTinyMce() {
   if (!window.tinymce) return;
+
+  const editorElement = document.getElementById("richEditor");
+  if (!editorElement) return;
+
+  const oldEditor = tinymce.get("richEditor");
+  if (oldEditor) {
+    oldEditor.remove();
+  }
+
   tinymce.init({
     selector: "#richEditor",
     height: 420,
     menubar: false,
-    plugins: "lists link image table code codesample autosave",
-    toolbar: "undo redo | blocks | bold italic underline | bullist numlist | table link image codesample | info warning success danger note | code",
+
+    plugins: [
+      "lists",
+      "link",
+      "image",
+      "table",
+      "code",
+      "codesample",
+      "autosave"
+    ],
+
+    toolbar:
+      "undo redo | blocks | bold italic underline | bullist numlist | table link image codesample | info warning success danger note | code",
+
     setup(editor) {
+
       const blocks = [
         ["info", "Info Box", "info-box"],
         ["warning", "Warning Box", "warning-box"],
@@ -574,10 +630,25 @@ function initTinyMce() {
         ["danger", "Danger Box", "danger-box"],
         ["note", "Note Box", "note-box"]
       ];
-      blocks.forEach(([name, text, cls]) => editor.ui.registry.addButton(name, {
-        text,
-        onAction: () => editor.insertContent(`<div class="${cls}"><strong>${text}</strong><p>Write details here.</p></div>`)
-      }));
+
+      blocks.forEach(([btnName, text, cls]) => {
+
+        editor.ui.registry.addButton(btnName, {
+          text,
+
+          onAction() {
+            editor.insertContent(
+              `<div class="${cls}">
+                <strong>${text}</strong>
+                <p>Write details here.</p>
+              </div>`
+            );
+          }
+
+        });
+
+      });
+
     }
   });
 }
